@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: build
+        run: dotnet build AnnoDesigner.sln -c Release
+
+      # only the importer tests run clean on net9 so far, the wpf test projects still crash the host
+      - name: test
+        run: dotnet test Tests/AnnoDesigner.Import.Tests/AnnoDesigner.Import.Tests.csproj -c Release --no-build

@@ -156,8 +156,9 @@ namespace AnnoDesigner.Import
 #endif
 
                                 RoadObject result = new RoadObject(template, island.ToLocalCoordinates(tile.Position), tile.Rotation, tile.Quadrants);
-
+#if DEBUG
                                 if (tile.Color.HasValue) result.Color = tile.Color.Value;
+#endif
 
                                 island.Objects.Add(result.CreateObject());
                             });
@@ -177,8 +178,9 @@ namespace AnnoDesigner.Import
 #endif
 
                                 TileObject result = new TileObject(template, island.ToLocalCoordinates(tile.Position), tile.Rotation, tile.Quadrants);
-
+#if DEBUG
                                 if (tile.Color.HasValue) result.Color = tile.Color.Value;
+#endif
 
                                 island.Objects.Add(result.CreateObject());
                             });

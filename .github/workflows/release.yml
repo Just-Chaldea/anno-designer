@@ -1,0 +1,33 @@
+name: Release
+
+# push a tag like v9.5 to cut a release
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # self-contained so users don't need the .net runtime installed
+      - name: publish
+        run: dotnet publish AnnoDesigner/AnnoDesigner.csproj -c Release -r win-x64 --self-contained true -o publish
+
+      - name: zip
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath AnnoDesigner-${{ github.ref_name }}.zip
+
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AnnoDesigner-${{ github.ref_name }}.zip
+          generate_release_notes: true
