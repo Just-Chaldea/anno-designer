@@ -9,9 +9,7 @@ namespace AnnoDesigner.Localization
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var translations = value as IDictionary<string, string>;
-
-            if (parameter is string key && translations.TryGetValue(key, out var translation))
+            if (parameter is string key && value is IDictionary<string, string> translations && translations.TryGetValue(key, out var translation))
             {
                 return translation;
             }
