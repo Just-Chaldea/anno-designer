@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using AnnoDesigner.CommandLine.Arguments;
 using AnnoDesigner.Core.Extensions;
+using AnnoDesigner.Core.Helper;
 using AnnoDesigner.Core.Models;
 using AnnoDesigner.Core.Services;
 using AnnoDesigner.Models;
@@ -171,7 +172,7 @@ namespace AnnoDesigner.ViewModels
 
         private void ExecuteOpenReleases(object param)
         {
-            Process.Start("https://github.com/Just-Chaldea/anno-designer/releases");
+            ProcessHelper.OpenUrl("https://github.com/Just-Chaldea/anno-designer/releases");
         }
 
         public ICommand DownloadPresetsCommand { get; private set; }

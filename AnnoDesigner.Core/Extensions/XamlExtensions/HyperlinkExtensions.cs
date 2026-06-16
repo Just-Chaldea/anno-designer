@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
+using AnnoDesigner.Core.Helper;
 
 namespace AnnoDesigner.Core.Extensions.XamlExtensions
 {
@@ -90,7 +91,7 @@ namespace AnnoDesigner.Core.Extensions.XamlExtensions
                     GetNavigationMessage(hyperlink), GetNavigationTitle(hyperlink), 
                     MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
-                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+                ProcessHelper.OpenUrl(e.Uri.AbsoluteUri);
                 e.Handled = true;
             }
         }

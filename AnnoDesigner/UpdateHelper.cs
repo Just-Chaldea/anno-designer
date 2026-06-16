@@ -393,6 +393,12 @@ namespace AnnoDesigner
                 return result;
             }
 
+            // GetAllAvailableReleases comes back null when offline or the api call fell over, dont NRE the lookups below
+            if (AllReleases == null)
+            {
+                return result;
+            }
+
             logger.Debug($"Check for updates with tag: \"{tagToCheck}\"");
 
             var supportPrerelease = _appSettings.UpdateSupportsPrerelease;

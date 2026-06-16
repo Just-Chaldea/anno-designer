@@ -21,7 +21,8 @@ namespace AnnoDesigner.Core.Helper
             var isInternetAvailable = false;
 
             var request = WebRequest.CreateHttp(URL);
-            request.Timeout = TimeSpan.FromSeconds(5).Milliseconds;
+            // 5s timeout. .Milliseconds is 0 for a whole 5s (wanted TotalMilliseconds), and net9 honors Timeout on async so the old 0 insta-failed every check.
+            request.Timeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
             request.Credentials = CredentialCache.DefaultCredentials;
             request.Method = REQUEST_METHOD_HEAD;
 
@@ -41,7 +42,7 @@ namespace AnnoDesigner.Core.Helper
             if (!isInternetAvailable)
             {
                 request = WebRequest.CreateHttp(SECOND_URL);
-                request.Timeout = TimeSpan.FromSeconds(5).Milliseconds;
+                request.Timeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
                 request.Credentials = CredentialCache.DefaultCredentials;
                 request.Method = REQUEST_METHOD_HEAD;
 

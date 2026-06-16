@@ -1123,7 +1123,7 @@ namespace AnnoDesigner.ViewModels
 
         private void OpenProjectHomepage(object param)
         {
-            Process.Start("https://github.com/Just-Chaldea/anno-designer/");
+            ProcessHelper.OpenUrl("https://github.com/Just-Chaldea/anno-designer/");
         }
 
         public ICommand CloseWindowCommand { get; private set; }
