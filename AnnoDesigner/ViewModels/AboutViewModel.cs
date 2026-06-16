@@ -26,7 +26,7 @@ namespace AnnoDesigner.ViewModels
 
         private void OpenProjectHomepage(object param)
         {
-            System.Diagnostics.Process.Start("https://github.com/AnnoDesigner/anno-designer/");
+            System.Diagnostics.Process.Start("https://github.com/Just-Chaldea/anno-designer/");
         }
 
         public ICommand OpenWikiHomepageCommand { get; private set; }

@@ -1,4 +1,5 @@
-﻿using AnnoDesigner.Core.Models;
+﻿using System.Collections.Generic;
+using AnnoDesigner.Core.Models;
 
 namespace AnnoDesigner.Core.Presets.Models
 {
@@ -9,12 +10,14 @@ namespace AnnoDesigner.Core.Presets.Models
         string Group { get; set; }
         string Identifier { get; set; }
         string IconFileName { get; set; }
-        SerializableDictionary<int> BuildBlocker { get; set; }
+        SerializableDictionary<double> BuildBlocker { get; set; }
+        List<SerializableDictionary<double>> BuildBlockerVariants { get; set; }
         string Template { get; set; }
         double InfluenceRange { get; set; }
         double  InfluenceRadius { get; set; }
         bool Borderless { get; set; }
         bool Road { get; set; }
+        double RoadInfluenceFactor { get; set; }
         SerializableDictionary<string> Localization { get; set; }
         int Guid { get; set; }
         double BlockedAreaLength { get; set; }

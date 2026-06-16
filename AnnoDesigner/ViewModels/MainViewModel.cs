@@ -176,6 +176,7 @@ namespace AnnoDesigner.ViewModels
             ShowPreferencesWindowCommand = new RelayCommand(ExecuteShowPreferencesWindow);
             ShowLicensesWindowCommand = new RelayCommand(ExecuteShowLicensesWindow);
             OpenRecentFileCommand = new RelayCommand(ExecuteOpenRecentFile);
+            ImportSavegameCommand = new RelayCommand(ExecuteImportSavegame);
 
             AvailableIcons = new ObservableCollection<IconImage>();
             _noIconItem = GenerateNoIconItem();
@@ -524,6 +525,15 @@ namespace AnnoDesigner.ViewModels
             {
                 BuildingSettingsViewModel.SelectedBuildingInfluence = BuildingSettingsViewModel.BuildingInfluences.Single(x => x.Type == BuildingInfluenceType.None);
             }
+
+            // The per-building "Paved Street" range boost is an Anno 1404-1800 mechanic. Anno 117
+            // instead carries road reach on the road tiles themselves (RoadInfluenceFactor), so the
+            // building-level toggle is hidden for 117 buildings to avoid double-counting the boost.
+            var selectedBuildingInfo = AnnoCanvas?.BuildingPresets?.Buildings?
+                .FirstOrDefault(_ => _.Identifier == BuildingSettingsViewModel.BuildingIdentifier);
+            BuildingSettingsViewModel.IsPavedStreetVisible =
+                BuildingSettingsViewModel.IsBuildingInfluenceInputRangeVisible
+                && selectedBuildingInfo?.Header != "(A8) Anno 117";
 
             // flags            
             //BuildingSettingsViewModel.IsEnableLabelChecked = !string.IsNullOrEmpty(obj.Label);
@@ -1113,7 +1123,7 @@ namespace AnnoDesigner.ViewModels
 
         private void OpenProjectHomepage(object param)
         {
-            Process.Start("https://github.com/AnnoDesigner/anno-designer/");
+            Process.Start("https://github.com/Just-Chaldea/anno-designer/");
         }
 
         public ICommand CloseWindowCommand { get; private set; }
@@ -1198,6 +1208,125 @@ namespace AnnoDesigner.ViewModels
                         Collection = AnnoCanvas.PlacedObjects
                     });
                 });
+            }
+        }
+
+        public ICommand ImportSavegameCommand { get; private set; }
+
+        /// <summary>
+        /// Imports an Anno 117 (.a8s) savegame, lets the user pick which island to load, and places it on the canvas.
+        /// </summary>
+        private void ExecuteImportSavegame(object param)
+        {
+            if (!AnnoCanvas.CheckUnsavedChanges())
+            {
+                return;
+            }
+
+            var dialog = new OpenFileDialog
+            {
+                Title = "Import Anno 117 Savegame",
+                DefaultExt = ".a8s",
+                Filter = "Anno 117 Savegame (*.a8s)|*.a8s|All files (*.*)|*.*"
+            };
+
+            var initialDirectory = GetDefaultSavegameDirectory();
+            if (!string.IsNullOrEmpty(initialDirectory))
+            {
+                dialog.InitialDirectory = initialDirectory;
+            }
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            LayoutFile imported;
+            var previousCursor = Mouse.OverrideCursor;
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var reader = new AnnoDesigner.Import.Anno117.SavegameReader();
+                imported = reader.ImportLayout(dialog.FileName, AnnoCanvas.BuildingPresets);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error importing Anno 117 savegame.");
+                _messageBoxService.ShowError(ex.Message, "Could not import savegame");
+                return;
+            }
+            finally
+            {
+                Mouse.OverrideCursor = previousCursor;
+            }
+
+            // Collect every non-empty island across all sessions, largest first (the obvious pick is preselected).
+            var islands = (imported?.Sessions ?? new List<SessionLayout>())
+                .Where(s => s?.Islands != null)
+                .SelectMany(s => s.Islands
+                    .Where(i => (i?.Objects?.Count ?? 0) > 0)
+                    .Select(i => new { Session = s.Name, Island = i }))
+                .OrderByDescending(x => x.Island.Objects.Count)
+                .ToList();
+
+            if (islands.Count == 0)
+            {
+                _messageBoxService.ShowMessage("No buildings could be imported from this savegame.", "Import Anno 117 Savegame");
+                return;
+            }
+
+            var chosen = 0;
+            if (islands.Count > 1)
+            {
+                var choices = islands.Select((x, n) => $"#{n + 1}  {x.Session}  ({x.Island.Objects.Count} buildings)");
+                chosen = ImportSavegameWindow.Prompt(this, choices);
+                if (chosen < 0)
+                {
+                    return;
+                }
+            }
+
+            OpenLayout(new LayoutFile(islands[chosen].Island.Objects));
+            AnnoCanvas.LoadedFile = string.Empty;
+            AnnoCanvas.ForceRendering();
+            _ = UpdateStatisticsAsync(UpdateMode.All);
+        }
+
+        /// <summary>
+        /// Starting folder for the savegame dialog: the folder with the newest 117 save (the active
+        /// profile), else the accounts or game folder. null if the 117 folder isn't there.
+        /// </summary>
+        private static string GetDefaultSavegameDirectory()
+        {
+            try
+            {
+                var root = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "Anno 117 - Pax Romana");
+                if (!Directory.Exists(root))
+                {
+                    return null;
+                }
+
+                // newest actual save, skipping the per-account accountdata.a8s
+                var newestSave = Directory.EnumerateFiles(root, "*.a8s", SearchOption.AllDirectories)
+                    .Where(f => !Path.GetFileName(f).Equals("accountdata.a8s", StringComparison.OrdinalIgnoreCase))
+                    .Select(f => new FileInfo(f))
+                    .OrderByDescending(f => f.LastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (newestSave != null)
+                {
+                    return newestSave.DirectoryName;
+                }
+
+                // no saves yet, land on the accounts tree if it's there, else the game folder
+                var accounts = Path.Combine(root, "accounts");
+                return Directory.Exists(accounts) ? accounts : root;
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Could not determine default Anno 117 savegame directory.");
+                return null;
             }
         }
 

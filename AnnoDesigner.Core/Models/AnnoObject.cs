@@ -39,11 +39,15 @@ namespace AnnoDesigner.Core.Models
             PavedStreet = obj.PavedStreet;
             Borderless = obj.Borderless;
             Road = obj.Road;
+            RoadInfluenceFactor = obj.RoadInfluenceFactor;
             // note: this is not really a copy, just a reference, but it is not supposed to change anyway
             //BuildCosts = obj.BuildCosts;
             BlockedAreaLength = obj.BlockedAreaLength;
             BlockedAreaWidth = obj.BlockedAreaWidth;
             Direction = obj.Direction;
+            Rotation = obj.Rotation;
+            RotationCenter = obj.RotationCenter;
+            TileQuadrants = obj.TileQuadrants;
         }
 
         #endregion
@@ -149,5 +153,33 @@ namespace AnnoDesigner.Core.Models
         /// </summary>
         [DataMember(Order = 14)]
         public GridDirection Direction { get; set; } = GridDirection.Down;
+
+        /// <summary>
+        /// Factor by which this road tile carries a building's influence range.
+        /// 1.0 = dirt/base road; higher = better road that extends reach further
+        /// (e.g. Anno 117 paved and marble roads = 1.5). Used by the per-tile
+        /// road-reach flood. Values &lt;= 0 are treated as 1.0.
+        /// </summary>
+        [DataMember(Order = 15)]
+        public double RoadInfluenceFactor { get; set; } = 1.0;
+
+        /// <summary>
+        /// Rotation in radians (Anno 117 diagonal placement).
+        /// </summary>
+        [DataMember(Order = 16)]
+        public double Rotation { get; set; } = 0;
+
+        /// <summary>
+        /// Center point for rotation. not always [w/2, h/2].
+        /// </summary>
+        [DataMember(Order = 17)]
+        public Point RotationCenter { get; set; }
+
+        /// <summary>
+        /// Tile quadrants in bits (4-bit value): 0x6 (0110) ◢, 0xC (1100) ◥,
+        /// 0x3 (0011) ◣, 0x9 (1001) ◤, 0xF (1111) ■.
+        /// </summary>
+        [DataMember(Order = 18)]
+        public byte? TileQuadrants { get; set; }
     }
 }

@@ -23,13 +23,12 @@ namespace AnnoDesigner
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string GITHUB_USERNAME = "AnnoDesigner";
+        private const string GITHUB_USERNAME = "Just-Chaldea";
         private const string GITHUB_PROJECTNAME = "anno-designer";
 
         private const string TAG_PRESETS = "Presetsv";
         private const string TAG_PRESETS_ICONS = "PresetsIconsv";
         private const string TAG_PRESETS_COLORS = "PresetsColorsv";
-        private const string TAG_PRESETS_WIKIBUILDINGINFO = "PresetsWikiBuildingInfov";
         private const string TAG_ANNO_DESIGNER = "AnnoDesignerv";
 
         private GitHubClient _apiClient;
@@ -342,7 +341,7 @@ namespace AnnoDesigner
                 var downloadedContent = "0.1";
                 using (var webClient = new WebClient())
                 {
-                    downloadedContent = await webClient.DownloadStringTaskAsync(new Uri("https://raw.githubusercontent.com/AnnoDesigner/anno-designer/master/version.txt"));
+                    downloadedContent = await webClient.DownloadStringTaskAsync(new Uri("https://raw.githubusercontent.com/Just-Chaldea/anno-designer/main/version.txt"));
                 }
 
                 var isNewVersionAvailable = Version.TryParse(downloadedContent, out var parsedVersion) && parsedVersion > Constants.Version;
@@ -479,9 +478,6 @@ namespace AnnoDesigner
                 case ReleaseType.PresetsColors:
                     result = TAG_PRESETS_COLORS;
                     break;
-                case ReleaseType.PresetsWikiBuildingInfo:
-                    result = TAG_PRESETS_WIKIBUILDINGINFO;
-                    break;
                 case ReleaseType.AnnoDesigner:
                     result = TAG_ANNO_DESIGNER;
                     break;
@@ -511,9 +507,6 @@ namespace AnnoDesigner
                 case ReleaseType.PresetsColors:
                     result = CoreConstants.PresetsFiles.ColorPresetsFile;
                     break;
-                case ReleaseType.PresetsWikiBuildingInfo:
-                    result = CoreConstants.PresetsFiles.WikiBuildingInfoPresetsFile;
-                    break;
                 case ReleaseType.Unknown:
                 default:
                     break;
@@ -540,9 +533,6 @@ namespace AnnoDesigner
                     result = Path.Combine(_basePath, CoreConstants.PrefixUpdatedPresetsFile + GetAssetNameForReleaseType(releaseType));
                     break;
                 case ReleaseType.PresetsColors:
-                    result = Path.Combine(_basePath, CoreConstants.PrefixUpdatedPresetsFile + GetAssetNameForReleaseType(releaseType));
-                    break;
-                case ReleaseType.PresetsWikiBuildingInfo:
                     result = Path.Combine(_basePath, CoreConstants.PrefixUpdatedPresetsFile + GetAssetNameForReleaseType(releaseType));
                     break;
                 case ReleaseType.Unknown:

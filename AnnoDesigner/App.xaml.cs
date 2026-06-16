@@ -76,7 +76,7 @@ namespace AnnoDesigner
             logger.Error(ex, @event);
 
             ShowMessageWithUnexpectedError(false);
-            MainWindow.DataContext.AnnoCanvas.CheckUnsavedChangesBeforeCrash();
+            MainWindow?.DataContext?.AnnoCanvas?.CheckUnsavedChangesBeforeCrash();
 
             Environment.Exit(-1);
         }
@@ -86,7 +86,7 @@ namespace AnnoDesigner
             var message = "An unhandled exception occurred.";
 
             //find loaction of log file
-            var fileTarget = LogManager.Configuration.FindTargetByName("MainLogger") as FileTarget;
+            var fileTarget = LogManager.Configuration?.FindTargetByName("MainLogger") as FileTarget;
             var logFile = fileTarget?.FileName.Render(new LogEventInfo());
             if (!string.IsNullOrWhiteSpace(logFile))
             {

@@ -986,12 +986,21 @@ namespace AnnoDesigner
                         }
 
                         var context = _drawingGroupSelectedObjectsInfluence.Open();
-                        context.PushGuidelineSet(_guidelineSet);
+                        try
+                        {
+                            context.PushGuidelineSet(_guidelineSet);
 
-                        RenderObjectInfluenceRadius(context, SelectedObjects);
-                        RenderObjectInfluenceRange(context, SelectedObjects);
-
-                        context.Close();
+                            RenderObjectInfluenceRadius(context, SelectedObjects);
+                            RenderObjectInfluenceRange(context, SelectedObjects);
+                        }
+                        catch (Exception influenceEx)
+                        {
+                            logger.Error(influenceEx, "Influence rendering failed");
+                        }
+                        finally
+                        {
+                            context.Close();
+                        }
 
                         if (_drawingGroupSelectedObjectsInfluence.CanFreeze)
                         {
@@ -1015,20 +1024,30 @@ namespace AnnoDesigner
                     }
 
                     var context = _drawingGroupInfluence.Open();
-                    context.PushGuidelineSet(_guidelineSet);
+                    try
+                    {
+                        context.PushGuidelineSet(_guidelineSet);
 
-                    RenderObjectInfluenceRadius(context, objectsToDraw);
-                    RenderObjectInfluenceRange(context, objectsToDraw);
-                    //Retrieve objects outside the viewport that have an influence range which affects objects
-                    //within the viewport.
-                    var offscreenObjects = PlacedObjects
-                    .Where(_ => !viewPortAbsolute.Contains(_.GridRect) &&
-                                (viewPortAbsolute.IntersectsWith(_.GridInfluenceRadiusRect) || viewPortAbsolute.IntersectsWith(_.GridInfluenceRangeRect))
-                     ).ToList();
-                    RenderObjectInfluenceRadius(context, offscreenObjects);
-                    RenderObjectInfluenceRange(context, offscreenObjects);
-
-                    context.Close();
+                        RenderObjectInfluenceRadius(context, objectsToDraw);
+                        RenderObjectInfluenceRange(context, objectsToDraw);
+                        //Retrieve objects outside the viewport that have an influence range which affects objects
+                        //within the viewport.
+                        var offscreenObjects = PlacedObjects
+                        .Where(_ => !viewPortAbsolute.Contains(_.GridRect) &&
+                                    (viewPortAbsolute.IntersectsWith(_.GridInfluenceRadiusRect) || viewPortAbsolute.IntersectsWith(_.GridInfluenceRangeRect))
+                         ).ToList();
+                        RenderObjectInfluenceRadius(context, offscreenObjects);
+                        RenderObjectInfluenceRange(context, offscreenObjects);
+                    }
+                    catch (Exception influenceEx)
+                    {
+                        logger.Error(influenceEx, "Influence rendering failed");
+                    }
+                    finally
+                    {
+                        // always close, otherwise the cached DrawingGroup throws on the next Open()
+                        context.Close();
+                    }
 
                     if (_drawingGroupInfluence.CanFreeze)
                     {
@@ -1047,7 +1066,9 @@ namespace AnnoDesigner
                     var hoveredObj = GetObjectAt(_mousePosition);
                     if (hoveredObj != null)
                     {
-                        drawingContext.DrawRectangle(null, _highlightPen, hoveredObj.CalculateScreenRect(_gridSize));
+                        drawingContext.PushTransform(hoveredObj, hoveredObj.GetScreenRectRotationCenterPoint(_gridSize));
+                        drawingContext.DrawObjectShape(hoveredObj, null, _highlightPen, hoveredObj.CalculateScreenRect(_gridSize));
+                        drawingContext.PopTransform(hoveredObj);
                     }
                 }
             }
@@ -1392,15 +1413,18 @@ namespace AnnoDesigner
             foreach (var curLayoutObject in objects)
             {
                 var obj = curLayoutObject.WrappedAnnoObject;
+                drawingContext.PushTransform(curLayoutObject, curLayoutObject.GetScreenRectRotationCenterPoint(gridSize));
 
-                // draw object rectangle
+                // draw object shape
                 var objRect = curLayoutObject.CalculateScreenRect(gridSize);
 
                 var brush = useTransparency ? curLayoutObject.TransparentBrush : curLayoutObject.RenderBrush;
 
                 var borderPen = obj.Borderless ? curLayoutObject.GetBorderlessPen(brush, linePenThickness) : _linePen;
-                drawingContext.DrawRectangle(brush, borderPen, objRect);
-                if (renderHarborBlockedArea)
+                drawingContext.DrawObjectShape(curLayoutObject, brush, borderPen, objRect);
+
+                // draw blocked area
+                if (renderHarborBlockedArea && !curLayoutObject.IsTile)
                 {
                     var objBlockedRect = curLayoutObject.CalculateBlockedScreenRect(gridSize);
                     if (objBlockedRect.HasValue)
@@ -1409,9 +1433,12 @@ namespace AnnoDesigner
                     }
                 }
 
+                // push transform for text and icon
+                drawingContext.PushTextTransform(curLayoutObject, ref objRect);
+
                 // draw object icon if it is at least 2x2 cells
                 var iconRendered = false;
-                if (renderIcon && !string.IsNullOrEmpty(obj.Icon))
+                if (renderIcon && !string.IsNullOrEmpty(obj.Icon) && (!curLayoutObject.IsTile || curLayoutObject.IsRectTile))
                 {
                     var iconFound = false;
 
@@ -1450,7 +1477,7 @@ namespace AnnoDesigner
                 }
 
                 // draw object label
-                if (renderLabel && !string.IsNullOrEmpty(obj.Label))
+                if (renderLabel && !string.IsNullOrEmpty(obj.Label) && !curLayoutObject.IsTile)
                 {
                     var textAlignment = iconRendered ? TextAlignment.Left : TextAlignment.Center;
                     var text = curLayoutObject.GetFormattedText(textAlignment, Thread.CurrentThread.CurrentCulture,
@@ -1488,6 +1515,9 @@ namespace AnnoDesigner
 
                     drawingContext.DrawText(text, textLocation);
                 }
+
+                drawingContext.PopTextTransform(curLayoutObject);
+                drawingContext.PopTransform(curLayoutObject);
             }
         }
 
@@ -1521,8 +1551,10 @@ namespace AnnoDesigner
 
                 foreach (var curLayoutObject in objects)
                 {
-                    // draw object rectangle                
-                    context.DrawRectangle(null, _highlightPen, curLayoutObject.CalculateScreenRect(GridSize));
+                    // draw object rectangle
+                    context.PushTransform(curLayoutObject, curLayoutObject.GetScreenRectRotationCenterPoint(_gridSize));
+                    context.DrawObjectShape(curLayoutObject, null, _highlightPen, curLayoutObject.CalculateScreenRect(GridSize));
+                    context.PopTransform(curLayoutObject);
                 }
 
                 context.Close();
@@ -1576,7 +1608,9 @@ namespace AnnoDesigner
                         // check if the center is within the influence circle
                         if ((distance.X * distance.X) + (distance.Y * distance.Y) <= radius * radius)
                         {
-                            drawingContext.DrawRectangle(_influencedBrush, _influencedPen, curPlacedObject.CalculateScreenRect(GridSize));
+                            drawingContext.PushTransform(curPlacedObject, curPlacedObject.GetScreenRectRotationCenterPoint(GridSize));
+                            drawingContext.DrawObjectShape(curPlacedObject, _influencedBrush, _influencedPen, curPlacedObject.CalculateScreenRect(GridSize));
+                            drawingContext.PopTransform(curPlacedObject);
                         }
                     }
 
@@ -1611,20 +1645,86 @@ namespace AnnoDesigner
                 placedAnnoObjects = placedObjects.Select(o => o.WrappedAnnoObject).ToList();
                 var placedObjectDictionary = placedObjects.ToDictionaryWithCapacity(o => o.WrappedAnnoObject);
 
+                // Collect (don't draw yet) the buildings the influence reaches, so they sit on top of
+                // the influence area rather than under it.
+                var inRangeObjects = new List<LayoutObject>();
                 void Highlight(AnnoObject objectInRange)
                 {
-                    drawingContext.DrawRectangle(_influencedBrush, _influencedPen, placedObjectDictionary[objectInRange].CalculateScreenRect(GridSize));
+                    inRangeObjects.Add(placedObjectDictionary[objectInRange]);
                 }
 
                 gridDictionary = RoadSearchHelper.PrepareGridDictionary(placedAnnoObjects);
-                RoadSearchHelper.BreadthFirstSearch(
+                var coveredCells = RoadSearchHelper.BreadthFirstSearch(
                     placedAnnoObjects,
                     objects.Select(o => o.WrappedAnnoObject).Where(o => o.InfluenceRange > 0.5),
                     o => (int)o.InfluenceRange + 1,// increase distance to get objects that are touching even the last road cell in influence range
                     gridDictionary,
                     Highlight);
+
+                // Collect the road tiles the influence actually reaches.
+                var coveredRoads = new List<LayoutObject>();
+                if (gridDictionary != null)
+                {
+                    var seenRoads = new HashSet<AnnoObject>();
+                    for (var cx = 0; cx < coveredCells.Length; cx++)
+                    {
+                        var column = coveredCells[cx];
+                        for (var cy = 0; cy < column.Length; cy++)
+                        {
+                            var cellObject = gridDictionary[cx][cy];
+                            if (column[cy] && cellObject?.Road == true && seenRoads.Add(cellObject)
+                                && placedObjectDictionary.TryGetValue(cellObject, out var roadObject))
+                            {
+                                coveredRoads.Add(roadObject);
+                            }
+                        }
+                    }
+                }
+
+                // union the source(s) and the reached road tiles by their real shapes, so the outline
+                // follows the geometry and diagonal roads get a diagonal outline, not a cell staircase
+                var influenceShapes = new GeometryGroup { FillRule = FillRule.Nonzero };
+                foreach (var source in objects)
+                {
+                    if (source.WrappedAnnoObject.InfluenceRange > 0.5)
+                    {
+                        AddInfluenceGeometry(influenceShapes, source);
+                    }
+                }
+                foreach (var road in coveredRoads)
+                {
+                    AddInfluenceGeometry(influenceShapes, road);
+                }
+
+                if (influenceShapes.Children.Count > 0)
+                {
+                    var outline = influenceShapes.GetOutlinedPathGeometry();
+                    if (outline.CanFreeze)
+                    {
+                        outline.Freeze();
+                    }
+
+                    drawingContext.DrawGeometry(_lightBrush, _radiusPen, outline);
+                }
+
+                // Highlight the reached roads and in-range buildings on top of the area, by shape.
+                foreach (var road in coveredRoads)
+                {
+                    drawingContext.PushTransform(road, road.GetScreenRectRotationCenterPoint(GridSize));
+                    drawingContext.DrawObjectShape(road, _influencedBrush, null, road.CalculateScreenRect(GridSize));
+                    drawingContext.PopTransform(road);
+                }
+                foreach (var inRange in inRangeObjects)
+                {
+                    drawingContext.PushTransform(inRange, inRange.GetScreenRectRotationCenterPoint(GridSize));
+                    drawingContext.DrawObjectShape(inRange, _influencedBrush, _influencedPen, inRange.CalculateScreenRect(GridSize));
+                    drawingContext.PopTransform(inRange);
+                }
+
+                return;
             }
 
+            // Maximum (not road-based) influence range: an octagon around each object.
             var geometries = new ConcurrentBag<(long index, StreamGeometry geometry)>();
             Parallel.ForEach(objects, (curLayoutObject, _, index) =>
             {
@@ -1634,20 +1734,14 @@ namespace AnnoDesigner
 
                     using (var sgc = sg.Open())
                     {
-                        if (RenderTrueInfluenceRange)
-                        {
-                            DrawTrueInfluenceRangePolygon(curLayoutObject, sgc, gridDictionary, placedAnnoObjects);
-                        }
-                        else
-                        {
-                            DrawInfluenceRangePolygon(curLayoutObject, sgc);
-                        }
+                        DrawInfluenceRangePolygon(curLayoutObject, sgc);
                     }
 
                     if (sg.CanFreeze)
                     {
                         sg.Freeze();
                     }
+
                     geometries.Add((index, sg));
                 }
             });
@@ -1658,36 +1752,28 @@ namespace AnnoDesigner
             }
         }
 
-        private void DrawTrueInfluenceRangePolygon(LayoutObject curLayoutObject, StreamGeometryContext sgc, Moved2DArray<AnnoObject> gridDictionary, List<AnnoObject> placedAnnoObjects)
+        /// <summary>
+        /// Adds the object's footprint shape (rotated for diagonals) to the group.
+        /// </summary>
+        private void AddInfluenceGeometry(GeometryGroup group, LayoutObject layoutObject)
         {
-            var stroked = true;
-            var smoothJoin = true;
+            var rect = layoutObject.CalculateScreenRect(GridSize);
+            Geometry geometry = layoutObject.WrappedAnnoObject.TileQuadrants.HasValue
+                ? TileHelper.CreateGeometry(rect, layoutObject.WrappedAnnoObject.TileQuadrants.Value)
+                : new RectangleGeometry(rect);
 
-            var geometryFill = true;
-            var geometryStroke = true;
-
-            var startObjects = new AnnoObject[1]
-            {
-                curLayoutObject.WrappedAnnoObject
-            };
-
-            var cellsInInfluenceRange = RoadSearchHelper.BreadthFirstSearch(
-                placedAnnoObjects,
-                startObjects,
-                o => (int)o.InfluenceRange,
-                gridDictionary);
-
-            var points = PolygonBoundaryFinderHelper.GetBoundaryPoints(cellsInInfluenceRange);
-            if (points.Count < 1)
+            if (geometry is null)
             {
                 return;
             }
 
-            sgc.BeginFigure(_coordinateHelper.GridToScreen(new Point(points[0].x + gridDictionary.Offset.x, points[0].y + gridDictionary.Offset.y), GridSize), geometryFill, geometryStroke);
-            for (var i = 1; i < points.Count; i++)
+            if (layoutObject.RotationDegrees != 0)
             {
-                sgc.LineTo(_coordinateHelper.GridToScreen(new Point(points[i].x + gridDictionary.Offset.x, points[i].y + gridDictionary.Offset.y), GridSize), stroked, smoothJoin);
+                var center = layoutObject.GetScreenRectRotationCenterPoint(GridSize);
+                geometry.Transform = new RotateTransform(-layoutObject.RotationDegrees, center.X, center.Y);
             }
+
+            group.Children.Add(geometry);
         }
 
         private void DrawInfluenceRangePolygon(LayoutObject curLayoutObject, StreamGeometryContext sgc)
@@ -2627,15 +2713,29 @@ namespace AnnoDesigner
             var gridPosition = _coordinateHelper.ScreenToFractionalGrid(position, GridSize);
             gridPosition = _viewport.OriginToViewport(gridPosition);
             var possibleItems = PlacedObjects.GetItemsIntersecting(new Rect(gridPosition, _intersectingRectSize));
+            LayoutObject backgroundFill = null;
             foreach (var curItem in possibleItems)
             {
                 if (curItem.GridRect.Contains(gridPosition))
                 {
+                    // the imported terrain fills shouldn't steal the click from a building/field on
+                    // the same tile, so prefer a real object and only fall back to a fill if it's alone
+                    if (IsBackgroundFill(curItem))
+                    {
+                        backgroundFill ??= curItem;
+                        continue;
+                    }
                     return curItem;
                 }
             }
 
-            return null;
+            return backgroundFill;
+        }
+
+        private static bool IsBackgroundFill(LayoutObject item)
+        {
+            var obj = item.WrappedAnnoObject;
+            return obj.Borderless && obj.Identifier == "BlockTile_1x1";
         }
 
         /// <summary>
@@ -2694,8 +2794,10 @@ namespace AnnoDesigner
                 return;
             }
 
-            var dx = PlacedObjects.Min(_ => _.Position.X) - border;
-            var dy = PlacedObjects.Min(_ => _.Position.Y) - border;
+            // round to whole tiles. diagonal buildings sit on half-tile positions, and without this a
+            // diagonal building at the edge would make the shift a half tile and knock everything else off grid
+            var dx = Math.Round(PlacedObjects.Min(_ => _.Position.X) - border, MidpointRounding.AwayFromZero);
+            var dy = Math.Round(PlacedObjects.Min(_ => _.Position.Y) - border, MidpointRounding.AwayFromZero);
             var diff = new Vector(dx, dy);
 
             if (diff.LengthSquared > 0)

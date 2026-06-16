@@ -84,7 +84,7 @@ namespace PresetParser
                     return false;
                 }
 
-                building.BuildBlocker = new SerializableDictionary<int>();
+                building.BuildBlocker = new SerializableDictionary<double>();
 
                 //Convert the strings to a Variable and replace the "." for a "," to keep calculatable numbers
                 var xfNormal1 = double.Parse(node1["xf"].InnerText, NumberStyles.Any, CultureInfo.InvariantCulture);
@@ -211,7 +211,7 @@ namespace PresetParser
             try
             {
                 XmlNode node = ifoDocument.FirstChild[BUILDBLOCKER]?.FirstChild;
-                building.BuildBlocker = new SerializableDictionary<int>();
+                building.BuildBlocker = new SerializableDictionary<double>();
 
                 var x = 0;
                 var z = 0;

@@ -1,0 +1,52 @@
+<Window x:Class="AnnoDesigner.ImportSavegameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:l="clr-namespace:AnnoDesigner.Localization"
+        xmlns:local="clr-namespace:AnnoDesigner"
+        xmlns:viewModel="clr-namespace:AnnoDesigner.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=viewModel:MainViewModel, IsDesignTimeCreatable=False}"
+        d:DesignHeight="320"
+        d:DesignWidth="480"
+        Title="Import Anno 117 Savegame"
+        WindowStartupLocation="CenterScreen"
+        SizeToContent="Height"
+        Width="480"
+        MinWidth="420"
+        MaxWidth="640"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanMinimize">
+    <StackPanel Margin="8,8,8,8">
+        <TextBlock x:Name="message"
+                   Text="Select an island to load into the designer:"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8" />
+        <ListBox x:Name="islandList"
+                 Height="240"
+                 FontFamily="Consolas"
+                 FontSize="13"
+                 MouseDoubleClick="IslandList_MouseDoubleClick" />
+        <Grid Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="OkButton"
+                    Content="{l:Localize OK}"
+                    Grid.Column="0"
+                    Margin="0,0,5,0"
+                    Padding="8"
+                    IsDefault="True"
+                    Click="OkButton_Click" />
+            <Button x:Name="CancelButton"
+                    Content="{l:Localize Cancel}"
+                    Grid.Column="1"
+                    Margin="5,0,0,0"
+                    Padding="8"
+                    IsCancel="True"
+                    Click="CancelButton_Click" />
+        </Grid>
+    </StackPanel>
+</Window>

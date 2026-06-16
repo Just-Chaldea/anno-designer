@@ -100,6 +100,8 @@
                     <MenuItem Command="{Binding CopyLayoutToClipboardCommand}" Header="{l:Localize CopyLayoutToClipboard}" />
                     <MenuItem Command="{Binding LoadLayoutFromJsonCommand}" Header="{l:Localize LoadLayoutFromJson}" />
                     <Separator />
+                    <MenuItem Command="{Binding ImportSavegameCommand}" Header="Import Anno 117 Savegame…" />
+                    <Separator />
                     <MenuItem
                         Header="{l:Localize RecentFiles}"
                         IsEnabled="{Binding HasRecentFiles}"
@@ -607,7 +609,7 @@
                         <DockPanel
                             Height="25"
                             LastChildFill="False"
-                            Visibility="{Binding BuildingSettingsViewModel.IsBuildingInfluenceInputRangeVisible, Converter={StaticResource converterBoolToVisibilityCollapsed}}">
+                            Visibility="{Binding BuildingSettingsViewModel.IsPavedStreetVisible, Converter={StaticResource converterBoolToVisibilityCollapsed}}">
                             <CheckBox
                                 Margin="0,3,0,5"
                                 Content="{l:Localize PavedStreet}"

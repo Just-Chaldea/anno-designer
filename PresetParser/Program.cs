@@ -910,7 +910,7 @@ namespace PresetParser
 
                 Console.WriteLine("Extra Building: {0}", buildingToAdd.Identifier);
 
-                buildingToAdd.BuildBlocker = new SerializableDictionary<int>();
+                buildingToAdd.BuildBlocker = new SerializableDictionary<double>();
                 buildingToAdd.BuildBlocker["x"] = curExtraPreset.BuildBlockerX;
                 buildingToAdd.BuildBlocker["z"] = curExtraPreset.BuildBlockerZ;
 
@@ -948,7 +948,7 @@ namespace PresetParser
 
                 Console.WriteLine("Extra Road Bar: {0}", buildingToAdd.Identifier);
 
-                buildingToAdd.BuildBlocker = new SerializableDictionary<int>();
+                buildingToAdd.BuildBlocker = new SerializableDictionary<double>();
                 buildingToAdd.BuildBlocker["x"] = curExtraRoad.BuildBlockerX;
                 buildingToAdd.BuildBlocker["z"] = curExtraRoad.BuildBlockerZ;
 
@@ -986,7 +986,7 @@ namespace PresetParser
 
                 Console.WriteLine("Extra Blocker: {0}", buildingToAdd.Identifier);
 
-                buildingToAdd.BuildBlocker = new SerializableDictionary<int>();
+                buildingToAdd.BuildBlocker = new SerializableDictionary<double>();
                 buildingToAdd.BuildBlocker["x"] = curBlockingTile.BuildBlockerX;
                 buildingToAdd.BuildBlocker["z"] = curBlockingTile.BuildBlockerZ;
 

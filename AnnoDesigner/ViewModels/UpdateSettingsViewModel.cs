@@ -123,7 +123,7 @@ namespace AnnoDesigner.ViewModels
                 UpdatedVersionValue = newAppVersion.ToString();
                 IsUpdateAvailable = true;
                 _messageBoxService.ShowMessage(Application.Current.MainWindow,
-                    _localizationHelper.GetLocalization("UpdatePreferencesNewAppUpdateAvailable") + Environment.NewLine + Environment.NewLine + "https://github.com/AnnoDesigner/anno-designer/releases/",
+                    _localizationHelper.GetLocalization("UpdatePreferencesNewAppUpdateAvailable") + Environment.NewLine + Environment.NewLine + "https://github.com/Just-Chaldea/anno-designer/releases/",
                     _localizationHelper.GetLocalization("UpdatePreferencesUpdates"));
             }
             else
@@ -171,7 +171,7 @@ namespace AnnoDesigner.ViewModels
 
         private void ExecuteOpenReleases(object param)
         {
-            Process.Start("https://github.com/AnnoDesigner/anno-designer/releases");
+            Process.Start("https://github.com/Just-Chaldea/anno-designer/releases");
         }
 
         public ICommand DownloadPresetsCommand { get; private set; }

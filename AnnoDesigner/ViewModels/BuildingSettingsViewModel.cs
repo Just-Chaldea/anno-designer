@@ -258,6 +258,17 @@ namespace AnnoDesigner.ViewModels
             set { UpdateProperty(ref _isBuildingInfluenceInputRangeVisible, value); }
         }
 
+        private bool _isPavedStreetVisible = true;
+        /// <summary>
+        /// Whether the per-building "Paved Street" range boost is shown. Hidden for Anno 117,
+        /// whose roads carry their own per-tile reach factor (RoadInfluenceFactor).
+        /// </summary>
+        public bool IsPavedStreetVisible
+        {
+            get { return _isPavedStreetVisible; }
+            set { UpdateProperty(ref _isPavedStreetVisible, value); }
+        }
+
         public BuildingInfluence SelectedBuildingInfluence
         {
             get { return _selectedBuildingInfluence; }
