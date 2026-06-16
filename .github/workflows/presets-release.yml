@@ -1,0 +1,34 @@
+name: Presets Release
+
+# push a tag like Presetsv5.2 to publish Presets/presets.json as its own release.
+# the in-app updater (UpdateHelper, "Presetsv" prefix) then offers it to anyone on an older presets version,
+# so building-data fixes ship without a whole app release. publishing from our repo, not upstream, keeps the
+# merged 117 data from getting clobbered by upstream's legacy-only presets.
+# the tag version must match the "Version" in presets.json or the app re-offers the update forever.
+on:
+  push:
+    tags: [ 'Presetsv*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  presets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: tag must match presets.json version
+        shell: bash
+        run: |
+          ver=$(grep -m1 -o '"Version":[^,]*' Presets/presets.json | grep -o '[0-9][0-9.]*')
+          tagver="${GITHUB_REF_NAME#Presetsv}"
+          if [ "$ver" != "$tagver" ]; then echo "tag $GITHUB_REF_NAME ($tagver) does not match presets.json Version ($ver)"; exit 1; fi
+          echo "ok, tag matches presets.json $ver"
+
+      # the asset has to be named presets.json, that's what the updater looks for
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Presets/presets.json
+          generate_release_notes: true

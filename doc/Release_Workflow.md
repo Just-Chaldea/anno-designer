@@ -1,54 +1,32 @@
-# Workflow for creating releases
+# Release workflow
 
-## General information
+Releases are built and published by GitHub Actions. There are two kinds, each cut by pushing a tag to the fork.
 
-- New releases of the main app (Anno Designer) contain all presets in their current version.
-- Releases of the main app will have the tag `AnnoDesignervx.x` where x.x.x will be replaced with the current version.
-- A preset is a file containing useful extra information for the main app.
-- All preset files contain a field `Version` in the format `x.x.x.x`.
+## App release (`v*`)
 
-## How to create a new release
+The whole application, as a self-contained win-x64 build (users do not need the .NET runtime installed).
 
-1. Adjust version number in file `version.txt`
-2. Run build script (`StartCakeBuild.bat`) in directory `build` with mode `Release`.
-3. The version numbers in `AssemblyInfo.cs` and `Constants.cs` will be adjusted automatically.
-4. Final asset will be in directory `build\out` with the name `Anno.Designer.vx.x.zip` where x.x will be the version number from step 1.
+1. Bump the version in all five spots: `version.txt`, `AnnoDesigner/Constants.cs`, and the `AssemblyInfo.cs` files in `AnnoDesigner`, `AnnoDesigner.Core` and `PresetParser`.
+2. Commit, then tag and push: `git tag -a v9.6 -m v9.6 && git push fork v9.6`.
+3. `.github/workflows/release.yml` publishes the build, zips it, and creates the GitHub Release with `AnnoDesigner-v9.6.zip` attached.
 
-## Known preset files
+The in-app update check reads `version.txt` from the default branch, so bumping `version.txt` is what tells existing installs an update is out.
 
-### `presets.json`
+## Presets release (`Presetsv*`)
 
-This preset file is the main information source of the main app.
+Just the building data (`Presets/presets.json`), so data fixes can go out without a full app build. The in-app updater pulls it automatically.
 
-It contains all informations about the buildings directly extracted from the game files for all supported versions of the game (1404, 2070, 2205, 1800).
+1. Edit the data and bump the `Version` field in `Presets/presets.json`.
+2. Tag with the matching version and push: `git tag Presetsv5.2 && git push fork Presetsv5.2`.
+3. `.github/workflows/presets-release.yml` checks the tag matches that `Version`, then publishes `presets.json` as the release asset.
 
-- Releases will have the tag `Presetsvx.x.x` where x.x.x will be replaced with the current version.
-- Releases will only contain one asset (`presets.json`).
+The tag version and the `Version` field have to match, or the app re-offers the update forever. We publish from this repo, not upstream, because our `presets.json` is merged with the Anno 117 data and an upstream legacy-only presets drop would overwrite it.
 
-### `icons.json`
+## Other preset assets the updater understands
 
-This preset file contains localized names of the icons from the `icons` folder for use in the main app.
+Carried over from the original project, each release with a single matching asset. We only use the first one so far.
 
-- Releases will have the tag `PresetsIconsvx.x.x` where x.x.x will be replaced with the current version.
-- Releases will only contain one asset (`icons.json`).
-
-### update of `presets.json` with icons
-
-This release contains an update of the `presets.json` and also some new icons.
-
-- Releases will have the tag `Presetsvx.x.x` where x.x.x will be replaced with the current version.
-- Releases will only contain one asset (`Presets.and.Icons.Update.vx.x.x.zip`).
-
-### `colors.json`
-
-This preset file contains predefined colors for the buildings from the `presets.json` file for use in the main app.
-
-- Releases will have the tag `PresetsColorsvx.x.x` where x.x.x will be replaced with the current version.
-- Releases will only contain one asset (`colors.json`).
-
-### `wikiBuildingInfo.json`
-
-This presets files conatins additional information for the buildings from the `presets.json` file which are parsed directly from the wiki.
-
-- Releases will have the tag `PresetsWikiBuildingInfovx.x.x` where x.x.x will be replaced with the current version.
-- Releases will only contain one asset (`wikiBuildingInfo.json`).
+- `Presetsv*` to `presets.json` (building data)
+- `Presetsv*` to `Presets.and.Icons.Update.*.zip` (presets plus new icons, for when a data change also needs icons shipped)
+- `PresetsIconsv*` to `icons.json` (localized icon names)
+- `PresetsColorsv*` to `colors.json` (predefined building colours)
